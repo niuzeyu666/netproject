@@ -1,0 +1,25 @@
+# Vagrant
+.vagrant/
+*.box
+
+# 安装包
+*.msi
+*.exe
+
+# 编译产物
+tju_tcp/build/
+tju_tcp/client
+tju_tcp/server
+tju_tcp/test/test
+tju_tcp/test/sender
+tju_tcp/test/receiver
+tju_tcp/test/rdt_client
+tju_tcp/test/rdt_server
+tju_tcp/test/close_server
+
+# 报告生成中间文件（保留最终报告和脚本）
+report_phase1/template_v3.docx
+
+# 系统文件
+Thumbs.db
+.DS_Store
