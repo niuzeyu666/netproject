@@ -1,12 +1,16 @@
 # -*- coding: UTF-8 -*-
 import time
-import pdb
 import socket
-import sys
+import sys 
 from fabric import Connection
+import matplotlib.pyplot as plt
 import signal
+import sys
+import time
+import numpy as np
 import os
-
+import shutil
+from matplotlib.pyplot import MultipleLocator
 TEST_USER = 'vagrant'
 TEST_PASS = 'vagrant'
 EXITING = False
@@ -23,10 +27,10 @@ def log(string):
 
 
 # 输入 带宽 延迟 丢包率
-rate = 100 
-delay = 300
-delay_distro = 50
-loss = 10
+rate = 50
+delay = 6
+delay_distro = 0
+loss = 0
 if len(sys.argv)>=2:
     rate = int(sys.argv[1])  
     delay = int(sys.argv[2])
@@ -34,6 +38,8 @@ if len(sys.argv)>=2:
     loss = int(sys.argv[4])
 log("\n即将使用如下网络状态进行数据传输: rate:%dMbps delay:%dms delay-distro:%d loss:%d%% \n"%(rate, delay, delay_distro, loss)) 
 
+start_time = 0
+end_time = 0
 def my_exit(signum, frame):
     global EXITING
     if EXITING==True:
@@ -76,7 +82,7 @@ def my_exit(signum, frame):
 
     exit()
 
-def main():
+def main(INIT_WDS):
     
     if socket.gethostname() == "server":
         log("只能在client端运行自动测试")
@@ -92,8 +98,8 @@ def main():
         
         # 编译提交的源码
         log("[自动测试] 编译提交源码")
-        log("> cd /vagrant/tju_tcp && make")
-        rst = conn.run("cd /vagrant/tju_tcp && make", timeout=10)
+        log(f"> cd /vagrant/tju_tcp && make INIT_WDS={INIT_WDS}")
+        rst = conn.run(f"cd /vagrant/tju_tcp && make INIT_WDS={INIT_WDS}", timeout=10)
         if (rst.failed):
             log('[自动测试] 编译提交源码错误 停止测试')
             log('{"scores": {"establish_connection": 0}}')
@@ -112,8 +118,8 @@ def main():
 
         # 编译测试源码
         log("[自动测试] 编译测试源码")
-        log("> cd /vagrant/tju_tcp/test && make")
-        rst = conn.run("cd /vagrant/tju_tcp/test && make", timeout=10)
+        log(f"> cd /vagrant/tju_tcp/test && make INIT_WDS={INIT_WDS}")
+        rst = conn.run(f"cd /vagrant/tju_tcp/test && make INIT_WDS={INIT_WDS}", timeout=10)
         if (rst.failed):
             log('[自动测试] 编译测试源码错误 停止测试')
             log('{"scores": {"establish_connection": 0}}')
@@ -205,7 +211,7 @@ def main():
             exit()
 
         # 等待60s的数据传输
-        log("[抓包并绘图] 等待60s 进行双方通信")
+        log("[抓包并绘图] 等待 60s 进行双方通信")
         time.sleep(60)
         
         # 停止抓包
@@ -257,7 +263,142 @@ def main():
 
 
 
-if __name__ == "__main__":
-    main()
 
-        
+def read_trace(file):
+    SEND_dic = {'utctime':[], 'seq':[], 'ack':[], 'flag':[], 'length':[]}
+    RECV_dic = {'utctime':[], 'seq':[], 'ack':[], 'flag':[], 'length':[]}
+    CWND_dic = {'utctime':[], 'type':[], 'size':[]}
+    RWND_dic = {'utctime':[], 'size':[]}
+    SWND_dic = {'utctime':[], 'size':[]}
+    RTTS_dic = {'utctime':[], 'SampleRTT':[], 'EstimatedRTT':[], 'DeviationRTT':[], 'TimeoutInterval':[]}
+    DELV_dic = {'utctime':[], 'seq':[], 'size':[], 'throughput':[]}
+
+    global start_time, end_time 
+    with open(file, 'r', encoding='utf-8') as f:
+        for num, line in enumerate(f):
+            if(line=='\n'): continue # 跳过空行
+            if('SEND' not in line and 'RECV' not in line and 'CWND' not in line and 'RWND' not in line 
+            and 'SWND' not in line and 'RTTS' not in line and 'DELV' not in line): continue # 跳过非事件行
+            line = line.strip('\n')
+            line = line.replace('[', '')
+            line = line.replace(']', '')
+            line_list = line.split(' ')
+            info_list = line_list[2:]
+            info_list = [item.split(':')[1] for item in info_list]
+            
+            if line_list[1] == 'SEND':
+                SEND_dic['utctime'].append(int(line_list[0]))
+                SEND_dic['seq'].append(int(info_list[0]))
+                SEND_dic['ack'].append(int(info_list[1]))
+                SEND_dic['flag'].append(info_list[2])
+                # SEND_dic['length'].append(int(info_list[3]))
+            elif line_list[1] == 'RECV':
+                RECV_dic['utctime'].append(int(line_list[0]))
+                RECV_dic['seq'].append(int(info_list[0]))
+                RECV_dic['ack'].append(int(info_list[1]))
+                RECV_dic['flag'].append(info_list[2])
+                # RECV_dic['length'].append(int(info_list[3]))
+            elif line_list[1] == 'CWND':
+                CWND_dic['utctime'].append(int(line_list[0]))
+                CWND_dic['type'].append(int(info_list[0]))
+                CWND_dic['size'].append(int(info_list[1])/1375)
+            elif line_list[1] == 'RWND':
+                RWND_dic['utctime'].append(int(line_list[0]))
+                RWND_dic['size'].append(int(info_list[0])/1375)
+            elif line_list[1] == 'SWND':
+                SWND_dic['utctime'].append(int(line_list[0]))
+                SWND_dic['size'].append(int(info_list[0])/1375)
+            elif line_list[1] == 'RTTS':
+                if line_list[0] not in RTTS_dic['utctime']: 
+                    RTTS_dic['utctime'].append(int(line_list[0]))
+                    RTTS_dic['SampleRTT'].append(float(info_list[0]))
+                    RTTS_dic['EstimatedRTT'].append(float(info_list[1]))
+                    RTTS_dic['DeviationRTT'].append(float(info_list[2]))
+                    RTTS_dic['TimeoutInterval'].append(float(info_list[3]))
+            elif line_list[1] == 'DELV':
+                DELV_dic['utctime'].append(int(line_list[0]))
+                DELV_dic['seq'].append(int(info_list[0]))
+                DELV_dic['size'].append(int(info_list[1])) 
+
+            if start_time==0:
+                start_time = int(line_list[0])
+            end_time = int(line_list[0]) - start_time
+
+
+    SEND_dic['time'] = [item - start_time for item in SEND_dic['utctime']]
+    RECV_dic['time'] = [item - start_time for item in RECV_dic['utctime']]
+    CWND_dic['time'] = [item - start_time for item in CWND_dic['utctime']]
+    RWND_dic['time'] = [item - start_time for item in RWND_dic['utctime']]
+    SWND_dic['time'] = [item - start_time for item in SWND_dic['utctime']]
+    RTTS_dic['time'] = [item - start_time for item in RTTS_dic['utctime']]
+    DELV_dic['time'] = [item - start_time for item in DELV_dic['utctime']]
+
+    SEND_dic['time'] = np.divide(SEND_dic['time'], 1000000) # 单位: s
+    RECV_dic['time'] = np.divide(RECV_dic['time'], 1000000)
+    CWND_dic['time'] = np.divide(CWND_dic['time'], 1000000)
+    RWND_dic['time'] = np.divide(RWND_dic['time'], 1000000)
+    SWND_dic['time'] = np.divide(SWND_dic['time'], 1000000)
+    RTTS_dic['time'] = np.divide(RTTS_dic['time'], 1000000)
+    DELV_dic['time'] = np.divide(DELV_dic['time'], 1000000)
+    end_time = end_time / 1000000
+
+    return SEND_dic, RECV_dic, CWND_dic, RWND_dic, SWND_dic, RTTS_dic, DELV_dic
+
+
+def delete_lines(filename, head,tail):
+    fin = open(filename, 'r')
+    a = fin.readlines()
+    fout = open(filename, 'w')
+    b = ''.join(a[head:-tail])
+    fout.write(b)
+
+
+if __name__ == "__main__":
+    loss_list = [i for i in range(0, 7, 1)]
+    if not os.path.exists("./loss.log"):
+        rates = []
+        init_wds = 64
+        for loss in loss_list:
+            log(f"init_wds: {init_wds}")
+            main(init_wds)
+            FILE_TO_READ = '/vagrant/tju_tcp/test/server.event.trace'
+            ## Start Calculating Data
+            delete_lines(FILE_TO_READ,0,1) # 删除最后一行（可能 client.event.trace 有问题）
+            SEND_dic, RECV_dic, CWND_dic, RWND_dic, SWND_dic, RTTS_dic, DELV_dic = read_trace(FILE_TO_READ)
+            interval_t = DELV_dic['time'][-1] - DELV_dic['time'][0]
+            total = 0
+            for i in DELV_dic['size']:
+                total = total + i
+            log(f"ave rate: {total}/{interval_t}={total/interval_t}")
+            rate_ = total/interval_t
+            log(f"{rate_}")
+            rates.append(rate_)
+
+        with open("./loss.log", "w") as f:
+            f.write(f"{rates}\n")
+            f.write(f"{loss_list}")
+    else:
+        rates = [1539835545.5637338, 1193516816.6519463, 958791156.110376, 904879108.1511514, 848162032.8747607, 800051203.2770112, 799513895.5515049]
+        loss_list = [0, 1, 2, 3, 4, 5, 6]
+    rates = [i/1000000000 for i in rates] 
+    plt.plot(loss_list, rates)
+    plt.scatter(loss_list, rates, c='black')
+    for x,y in zip(loss_list, rates):
+        plt.text(x,y,f"{y:.4f}",ha='left')
+    plt.ylabel(f"Throughput / Gbps")
+    plt.xlabel(f"loss / \%")
+    plt.title(f"Throughtput - loss")
+    plt.xlim(-0.5,7)
+    x_major_locator=MultipleLocator(1)
+    ax=plt.gca()
+    #ax为两条坐标轴的实例
+    ax.xaxis.set_major_locator(x_major_locator)
+    plt.legend()
+    plt.savefig('/vagrant/tju_tcp/test/loss.png', dpi=600)
+    print("绘制成功，图像位于/vagrant/tju_tcp/test/loss.png")
+
+
+
+
+
+

@@ -5,8 +5,14 @@ import socket
 import sys
 
 
+print("Open ./log.log")
+with open('./log.log', 'r') as file:
+    lines = file.readlines()
+    lines = lines[1]
+    config = lines[lines.find(' '):]
+    print("config", config)
 
-FILE_TO_READ = '/home/vagrant/server.pcap'
+FILE_TO_READ = '/vagrant/tju_tcp/test/server.pcap'
 if len(sys.argv)>=2:
 	FILE_TO_READ = sys.argv[1]
 print("正在使用 %s 抓包结果绘图"%FILE_TO_READ)
@@ -42,6 +48,7 @@ for packet in packets:
 plt.plot(times, seq_list)
 plt.xlabel('Time (s)', fontdict={'size':24})
 plt.ylabel('Sequence Number', fontdict={'size':24})
+plt.title(f"sequence {config}")
 plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 plt.savefig('/vagrant/tju_tcp/test/SeqNum_VS_Time.png', dpi=600)
 print("绘制成功, 图像位于/vagrant/tju_tcp/test/SeqNum_VS_Time.png")

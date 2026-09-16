@@ -16,6 +16,18 @@ tju_tcp/test/receiver
 tju_tcp/test/rdt_client
 tju_tcp/test/rdt_server
 tju_tcp/test/close_server
+tju_tcp/test/client.log
+tju_tcp/test/server.log
+tju_tcp/test/rdt_client.log
+tju_tcp/test/rdt_server.log
+tju_tcp/test/rdt_recv_file.txt
+tju_tcp/test/test_client
+tju_tcp/test/test_server
+tju_tcp/test/rdt_client
+tju_tcp/test/rdt_server
+tju_tcp/test/close_client
+tju_tcp/rdt_*.log
+report_phase1/*_screenshot.png
 
 # 报告生成中间文件（保留最终报告和脚本）
 report_phase1/template_v3.docx
@@ -23,3 +35,43 @@ report_phase1/template_v3.docx
 # 系统文件
 Thumbs.db
 .DS_Store
+
+# Vagrant
+.vagrant_home/
+
+# 打包文件
+*.zip
+
+# 测试产物和日志
+*.log
+*.pcap
+*.trace
+*.mp4
+*.backup
+*.tmp
+*.event
+
+# 编译产物（test目录）
+tju_tcp/test/test_congestion
+tju_tcp/test/gen_graph_seq
+tju_tcp/test/gen_graph_win
+tju_tcp/test/close_server_for_server
+tju_tcp/test/test_close_server_for_server
+
+# 备份目录
+tju_tcp_backup/
+package_stage/
+
+# 临时脚本和中间文件
+dev
+gen_tcpdump_img.py
+clean_report.py
+fill_report.py
+fill_report2.py
+manual_rdt_test.sh
+
+# 课程资料PDF
+*.pdf
+
+# VM截图
+vm_status.png

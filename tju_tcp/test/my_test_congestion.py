@@ -21,6 +21,10 @@ def log(string):
         f.write(string)
         f.write('\n')
 
+if len(sys.argv) < 6:
+    log(f"\n>> SIZE:{len(sys.argv)}")
+    log("\n>> ERROR! usage: python3 ./my_test_congestion.py rate(50) delay(6) delay-distro(0) loss(0) INIT_WDSIZE(50)")
+    exit(1)
 
 # 输入 带宽 延迟 丢包率
 rate = 100 
@@ -76,7 +80,7 @@ def my_exit(signum, frame):
 
     exit()
 
-def main():
+def main(INIT_WDS):
     
     if socket.gethostname() == "server":
         log("只能在client端运行自动测试")
@@ -92,8 +96,8 @@ def main():
         
         # 编译提交的源码
         log("[自动测试] 编译提交源码")
-        log("> cd /vagrant/tju_tcp && make")
-        rst = conn.run("cd /vagrant/tju_tcp && make", timeout=10)
+        log(f"> cd /vagrant/tju_tcp && make INIT_WDS={INIT_WDS}")
+        rst = conn.run(f"cd /vagrant/tju_tcp && make INIT_WDS={INIT_WDS}", timeout=10)
         if (rst.failed):
             log('[自动测试] 编译提交源码错误 停止测试')
             log('{"scores": {"establish_connection": 0}}')
@@ -112,8 +116,8 @@ def main():
 
         # 编译测试源码
         log("[自动测试] 编译测试源码")
-        log("> cd /vagrant/tju_tcp/test && make")
-        rst = conn.run("cd /vagrant/tju_tcp/test && make", timeout=10)
+        log(f"> cd /vagrant/tju_tcp/test && make INIT_WDS={INIT_WDS}")
+        rst = conn.run(f"cd /vagrant/tju_tcp/test && make INIT_WDS={INIT_WDS}", timeout=10)
         if (rst.failed):
             log('[自动测试] 编译测试源码错误 停止测试')
             log('{"scores": {"establish_connection": 0}}')
@@ -205,8 +209,8 @@ def main():
             exit()
 
         # 等待60s的数据传输
-        log("[抓包并绘图] 等待60s 进行双方通信")
-        time.sleep(60)
+        log("[抓包并绘图] 等待100s 进行双方通信")
+        time.sleep(100)
         
         # 停止抓包
         log("[抓包并绘图] 停止抓包")
@@ -257,7 +261,8 @@ def main():
 
 
 
+
 if __name__ == "__main__":
-    main()
+    main(sys.argv[5])
 
         

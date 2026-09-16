@@ -1,4 +1,4 @@
-#include "tju_tcp.h"
+﻿#include "tju_tcp.h"
 #include <string.h>
 #include <signal.h>
 #include <stdio.h>
@@ -9,10 +9,10 @@
 
 int t_times = 5000;
 // int t_times = 50;
-char allbuf[MAXSIZE] = {'\0'}; //设置全局变量
+char allbuf[MAXSIZE] = {'\0'}; //璁剧疆鍏ㄥ眬鍙橀噺
 
 void fflushbeforeexit(int signo){
-    printf("意外退出server\n");
+    printf("鎰忓閫€鍑簊erver\n");
 
     FILE *wfile;
     wfile = fopen("/vagrant/tju_tcp/test/rdt_recv_file.txt","w");
@@ -38,13 +38,13 @@ int main(int argc, char **argv) {
     signal(SIGINT, fflushbeforeexit);
     signal(SIGQUIT, fflushbeforeexit);
 
-    // 开启仿真环境 
+    // 寮€鍚豢鐪熺幆澧?
     startSimulation();
     
     tju_tcp_t* my_server = tju_socket();
     
     tju_sock_addr bind_addr;
-    bind_addr.ip = inet_network("172.17.0.3");
+    bind_addr.ip = inet_network("172.17.0.6");
     bind_addr.port = 1234;
     
     tju_bind(my_server, bind_addr);
