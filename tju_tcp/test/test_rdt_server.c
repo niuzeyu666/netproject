@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
     tju_tcp_t* my_server = tju_socket();
     
     tju_sock_addr bind_addr;
-    bind_addr.ip = inet_network("172.17.0.6");
+    bind_addr.ip = inet_network("172.17.0.3");
     bind_addr.port = 1234;
     
     tju_bind(my_server, bind_addr);

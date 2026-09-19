@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
     tju_tcp_t* my_socket = tju_socket();
     
     tju_sock_addr target_addr;
-    target_addr.ip = inet_network("172.17.0.6");
+    target_addr.ip = inet_network("172.17.0.3");
     target_addr.port = 1234;
 
     tju_connect(my_socket, target_addr);
